@@ -1,0 +1,19 @@
+# Environment & Secrets
+.env
+.venv/
+
+# Folders
+.agents/
+.claude/
+.opencode/
+.extracted_data/
+fda_pdfs/
+graphify-out/
+pipeline/
+
+# Files
+AGENTS.MD
+CLAUDE.MD
+cloud_output.txt
+scratch_test_cloud.py
+.env

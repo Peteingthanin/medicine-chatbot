@@ -1,0 +1,39 @@
+# .dockerignore — keeps the Oracle Cloud image lean
+# Only src/ and requirements.txt are needed at runtime.
+
+# ----- Offline pipeline (local only) -----
+pipeline/
+
+# ----- Large local model files (mounted as volumes at runtime) -----
+llm/
+
+# ----- Data directories (mounted as volumes at runtime) -----
+vector_db/
+graph_db/
+extracted_data/
+fda_pdfs/
+
+# ----- Dev / tooling -----
+graphify-out/
+.agents/
+.claude/
+.opencode/
+.venv/
+.git/
+.gitignore
+*.md
+*.txt
+!requirements.txt
+
+# ----- Python artefacts -----
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.egg-info/
+.pytest_cache/
+
+# ----- Secrets / local config -----
+.env
+scratch_test_cloud.py
+cloud_output.txt

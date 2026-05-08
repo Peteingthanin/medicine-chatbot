@@ -1,1 +1,1 @@
-# medicine-chatbot
+# pill_chatbot

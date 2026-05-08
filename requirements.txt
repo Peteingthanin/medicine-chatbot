@@ -1,0 +1,10 @@
+llama-cpp-python
+qdrant-client
+fastapi
+uvicorn[standard]
+networkx
+tqdm
+python-dotenv
+pydantic
+openai
+neo4j
