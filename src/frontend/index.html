@@ -1,518 +1,805 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAG Pipeline Evaluation — Medication Chatbot</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Pipeline Evaluation — Medication Chatbot</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-  :root {
-    --bg:        #0d1117;
-    --surface:   #161b22;
-    --surface2:  #21262d;
-    --border:    #30363d;
-    --text:      #e6edf3;
-    --muted:     #8b949e;
-    --accent:    #58a6ff;
-    --green:     #3fb950;
-    --orange:    #d29922;
-    --purple:    #bc8cff;
-    --red:       #f85149;
-    --p1-color:  #58a6ff;
-    --p2-color:  #bc8cff;
-  }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --purple: #bc8cff;
+      --red: #f85149;
+      --p1-color: #58a6ff;
+      --p2-color: #bc8cff;
+    }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-  /* Header */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .logo { font-size: 20px; }
-  header h1 { font-size: 16px; font-weight: 600; }
-  header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .badge {
-    font-size: 11px; font-weight: 500; padding: 2px 8px;
-    border-radius: 999px; background: var(--surface2); border: 1px solid var(--border);
-  }
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-  /* Main layout */
-  main { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .logo {
+      font-size: 20px;
+    }
 
-  /* Query bar */
-  .query-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .query-bar textarea {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 14px;
-    padding: 12px;
-    resize: none;
-    height: 60px;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .query-bar textarea:focus { border-color: var(--accent); }
-  .query-bar textarea::placeholder { color: var(--muted); }
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
 
-  .query-actions { display: flex; flex-direction: column; gap: 8px; }
+    header p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
 
-  .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: opacity .2s, transform .1s;
-    white-space: nowrap;
-  }
-  .btn:active { transform: scale(.97); }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
 
-  .btn-primary  { background: var(--accent); color: #000; }
-  .btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    /* Main layout */
+    main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
 
-  /* Contraindication chips */
-  .contraind-row {
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .contraind-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .chip {
-    font-size: 11px; padding: 3px 10px;
-    border-radius: 999px; border: 1px solid var(--border);
-    background: var(--surface2); cursor: pointer;
-    transition: background .15s;
-  }
-  .chip.active { background: #2d2235; border-color: var(--purple); color: var(--purple); }
-  .chip:hover:not(.active) { background: var(--surface); }
+    /* Query bar */
+    .query-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
 
-  /* Comparison grid */
-  .compare-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  @media (max-width: 900px) { .compare-grid { grid-template-columns: 1fr; } }
+    .query-bar textarea {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 12px;
+      resize: none;
+      height: 60px;
+      outline: none;
+      transition: border-color .2s;
+    }
 
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .panel-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .pipeline-badge {
-    font-size: 11px; font-weight: 600; padding: 3px 10px;
-    border-radius: 999px;
-  }
-  .p1 .pipeline-badge { background: #0d2137; color: var(--p1-color); border: 1px solid #1a4268; }
-  .p2 .pipeline-badge { background: #1a1030; color: var(--p2-color); border: 1px solid #3d2260; }
-  .panel-title { font-size: 14px; font-weight: 600; }
-  .timing-tag  { margin-left: auto; font-size: 11px; color: var(--muted); }
+    .query-bar textarea:focus {
+      border-color: var(--accent);
+    }
 
-  .panel-body { padding: 16px; }
+    .query-bar textarea::placeholder {
+      color: var(--muted);
+    }
 
-  /* Answer box */
-  .answer-box {
-    background: var(--surface2);
-    border-radius: 8px;
-    padding: 14px;
-    font-size: 14px;
-    line-height: 1.7;
-    min-height: 80px;
-    white-space: pre-wrap;
-    margin-bottom: 16px;
-  }
-  .answer-placeholder { color: var(--muted); font-style: italic; }
+    .query-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-  /* Candidate drugs (hybrid only) */
-  .candidates {
-    margin-bottom: 12px;
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .candidate-chip {
-    font-size: 11px; padding: 3px 10px;
-    border-radius: 999px;
-    background: #1a1030; color: var(--purple);
-    border: 1px solid #3d2260;
-  }
-  .filtered-chip {
-    font-size: 11px; padding: 3px 10px;
-    border-radius: 999px;
-    background: #2d1515; color: var(--red);
-    border: 1px solid #5a2020;
-    text-decoration: line-through;
-  }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s, transform .1s;
+      white-space: nowrap;
+    }
 
-  /* Sources */
-  .sources-label {
-    font-size: 11px; font-weight: 600;
-    color: var(--muted); text-transform: uppercase;
-    letter-spacing: .05em; margin-bottom: 8px;
-  }
-  .source-item {
-    background: var(--surface2);
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    font-size: 12px;
-  }
-  .source-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-    flex-wrap: wrap;
-  }
-  .source-pill { font-weight: 600; color: var(--accent); }
-  .source-section { color: var(--muted); }
-  .source-score {
-    margin-left: auto;
-    font-size: 10px;
-    background: var(--bg);
-    padding: 1px 6px;
-    border-radius: 4px;
-    color: var(--muted);
-  }
-  .source-bullets { padding-left: 14px; color: var(--text); line-height: 1.6; }
-  .source-bullets li { margin-bottom: 2px; }
+    .btn:active {
+      transform: scale(.97);
+    }
 
-  /* Rating */
-  .rating-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .rating-label { font-size: 12px; color: var(--muted); }
-  .rating-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 12px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background .15s;
-  }
-  .rating-btn:hover { background: var(--surface); }
-  .rating-btn.selected { border-color: var(--green); }
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
 
-  /* Loading spinner */
-  .spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin .6s linear infinite;
-    vertical-align: middle; margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
 
-  /* History */
-  .history-section {
-    margin-top: 32px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .history-section h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--muted); }
-  .history-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 0; border-bottom: 1px solid var(--border);
-    font-size: 12px; cursor: pointer;
-  }
-  .history-row:last-child { border-bottom: none; }
-  .history-row:hover { color: var(--accent); }
-  .history-q { flex: 1; }
-  .history-rating { font-size: 14px; }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
 
-  /* Empty state */
-  .empty {
-    text-align: center; padding: 48px 16px;
-    color: var(--muted); font-size: 14px;
-  }
-  .empty .icon { font-size: 48px; margin-bottom: 12px; }
-  /* Tabs */
-  .tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface); }
-  .tab-btn { padding:14px 24px; font-size:14px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:0.2s; }
-  .tab-btn:hover { color:var(--text); }
-  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); background:var(--bg); }
+    /* Contraindication chips */
+    .contraind-row {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
-  /* Chat Mode */
-  .chat-container { display:flex; flex-direction:column; height: calc(100vh - 180px); background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-  .chat-history { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
-  .chat-msg { max-width:80%; line-height:1.6; font-size:14px; padding:12px 16px; border-radius:12px; white-space:pre-wrap; }
-  .chat-user { align-self:flex-end; background:var(--accent); color:#000; border-bottom-right-radius:4px; }
-  .chat-bot { align-self:flex-start; background:var(--surface2); color:var(--text); border:bottom-left-radius:4px; border:1px solid var(--border); }
-  .chat-input-area { padding:16px; background:var(--surface); border-top:1px solid var(--border); display:flex; gap:12px; align-items:flex-end; }
-  .chat-input-area textarea { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-family:inherit; resize:none; outline:none; height:48px; max-height:120px; overflow-y:auto; transition:border-color 0.2s; }
-  .chat-input-area textarea:focus { border-color:var(--accent); }
-  .chat-input-area button { height:48px; padding:0 24px; border-radius:8px; background:var(--accent); color:#000; font-weight:600; border:none; cursor:pointer; }
-  .chat-input-area button:disabled { opacity:0.5; cursor:not-allowed; }
-  
-  .chat-candidates { font-size:12px; color:var(--purple); margin-top:8px; border-top:1px solid var(--border); padding-top:8px; }
-</style>
+    .contraind-row label {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .chip.active {
+      background: #2d2235;
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    .chip:hover:not(.active) {
+      background: var(--surface);
+    }
+
+    /* Comparison grid */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pipeline-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .p1 .pipeline-badge {
+      background: #0d2137;
+      color: var(--p1-color);
+      border: 1px solid #1a4268;
+    }
+
+    .p2 .pipeline-badge {
+      background: #1a1030;
+      color: var(--p2-color);
+      border: 1px solid #3d2260;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .timing-tag {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    /* Answer box */
+    .answer-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 80px;
+      white-space: pre-wrap;
+      margin-bottom: 16px;
+    }
+
+    .answer-placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Candidate drugs (hybrid only) */
+    .candidates {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .candidate-chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #1a1030;
+      color: var(--purple);
+      border: 1px solid #3d2260;
+    }
+
+    .filtered-chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #2d1515;
+      color: var(--red);
+      border: 1px solid #5a2020;
+      text-decoration: line-through;
+    }
+
+    /* Sources */
+    .sources-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 8px;
+    }
+
+    .source-item {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .source-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .source-pill {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .source-section {
+      color: var(--muted);
+    }
+
+    .source-score {
+      margin-left: auto;
+      font-size: 10px;
+      background: var(--bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--muted);
+    }
+
+    .source-bullets {
+      padding-left: 14px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .source-bullets li {
+      margin-bottom: 2px;
+    }
+
+    /* Rating */
+    .rating-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .rating-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .rating-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background .15s;
+    }
+
+    .rating-btn:hover {
+      background: var(--surface);
+    }
+
+    .rating-btn.selected {
+      border-color: var(--green);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* History */
+    .history-section {
+      margin-top: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .history-section h2 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--muted);
+    }
+
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .history-row:last-child {
+      border-bottom: none;
+    }
+
+    .history-row:hover {
+      color: var(--accent);
+    }
+
+    .history-q {
+      flex: 1;
+    }
+
+    .history-rating {
+      font-size: 14px;
+    }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .empty .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .tab-btn {
+      padding: 14px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--bg);
+    }
+
+    /* Chat Mode */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 180px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-msg {
+      max-width: 80%;
+      line-height: 1.6;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+    }
+
+    .chat-user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #000;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-bot {
+      align-self: flex-start;
+      background: var(--surface2);
+      color: var(--text);
+      border: bottom-left-radius:4px;
+      border: 1px solid var(--border);
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .chat-input-area textarea {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      height: 48px;
+      max-height: 120px;
+      overflow-y: auto;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input-area textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .chat-input-area button {
+      height: 48px;
+      padding: 0 24px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .chat-input-area button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .chat-candidates {
+      font-size: 12px;
+      color: var(--purple);
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+  </style>
 </head>
+
 <body>
 
-<header>
-  <span class="logo">💊</span>
-  <div>
-    <h1>Medication RAG</h1>
-    <p>Hybrid Search & Conversational Reasoning</p>
-  </div>
-  <span class="badge" style="margin-left:auto" id="statusBadge">Checking...</span>
-</header>
-
-<div class="tabs">
-  <div class="tab-btn active" onclick="switchTab('eval')">🔬 Evaluation Mode</div>
-  <div class="tab-btn" onclick="switchTab('chat')">💬 Conversational Chatbot</div>
-</div>
-
-<main>
-
-  <!-- EVALUATION MODE -->
-  <div id="evalMode">
-    <!-- Query bar -->
-  <div class="query-bar">
-    <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-      <select id="modelSelect" style="background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px; font-size:12px; width:max-content; outline:none; cursor:pointer;">
-        <option value="deepseek">DeepSeek V4 Flash (cloud)</option>
-        <option value="minimax">MiniMax M2.5:free (cloud)</option>
-        <option value="local">Qwen3.5-4B (local)</option>
-      </select>
-      <textarea id="queryInput"
-        placeholder="พิมพ์คำถามเป็นภาษาไทย เช่น 'ฉันปวดหัวมาก จะกินยาอะไรดี'"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuery();}"></textarea>
+  <header>
+    <span class="logo">💊</span>
+    <div>
+      <h1>Medication RAG</h1>
+      <p>Hybrid Search & Conversational Reasoning</p>
     </div>
-    <div class="query-actions">
-      <button class="btn btn-primary" id="sendBtn" onclick="sendQuery()">ส่ง</button>
-      <button class="btn btn-secondary" onclick="clearAll()">ล้าง</button>
-    </div>
+    <span class="badge" style="margin-left:auto" id="statusBadge">Checking...</span>
+  </header>
+
+  <div class="tabs">
+    <div class="tab-btn active" onclick="switchTab('eval')">🔬 Evaluation Mode</div>
+    <div class="tab-btn" onclick="switchTab('chat')">💬 Conversational Chatbot</div>
   </div>
 
-  <!-- Contraindication filter -->
-  <div class="contraind-row">
-    <label>ข้อห้ามใช้ของผู้ใช้:</label>
-    <span class="chip" onclick="toggleChip(this,'pregnancy')">🤰 ตั้งครรภ์</span>
-    <span class="chip" onclick="toggleChip(this,'kidney disease')">🫘 โรคไต</span>
-    <span class="chip" onclick="toggleChip(this,'liver disease')">🫁 โรคตับ</span>
-    <span class="chip" onclick="toggleChip(this,'alcohol')">🍺 ดื่มแอลกอฮอล์</span>
-    <span class="chip" onclick="toggleChip(this,'cephalosporin allergy')">⚠️ แพ้เซฟาโลสปอริน</span>
-  </div>
+  <main>
 
-  <!-- Comparison panels -->
-  <div class="compare-grid">
-
-    <!-- Phase 1 -->
-    <div class="panel p1" id="panel1">
-      <div class="panel-header">
-        <span class="pipeline-badge">Phase 1</span>
-        <span class="panel-title">Vector Only</span>
-        <span class="timing-tag" id="timing1">—</span>
-      </div>
-      <div class="panel-body">
-        <div class="answer-box">
-          <span class="answer-placeholder" id="answer1">คำตอบจะปรากฏที่นี่...</span>
+    <!-- EVALUATION MODE -->
+    <div id="evalMode">
+      <!-- Query bar -->
+      <div class="query-bar">
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+          <select id="modelSelect"
+            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px; font-size:12px; width:max-content; outline:none; cursor:pointer;">
+            <option value="deepseek">DeepSeek V4 Flash (cloud)</option>
+            <option value="minimax">MiniMax M2.5:free (cloud)</option>
+            <option value="local">Qwen3.5-4B (local)</option>
+          </select>
+          <textarea id="queryInput" placeholder="พิมพ์คำถามเป็นภาษาไทย เช่น 'ฉันปวดหัวมาก จะกินยาอะไรดี'"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuery();}"></textarea>
         </div>
-        <div class="sources-label">Sources</div>
-        <div id="sources1"><span style="color:var(--muted);font-size:12px">—</span></div>
-        <div class="rating-row">
-          <span class="rating-label">คุณภาพคำตอบ:</span>
-          <button class="rating-btn" id="r1up"   onclick="rate('phase1','up')">👍</button>
-          <button class="rating-btn" id="r1down" onclick="rate('phase1','down')">👎</button>
+        <div class="query-actions">
+          <button class="btn btn-primary" id="sendBtn" onclick="sendQuery()">ส่ง</button>
+          <button class="btn btn-secondary" onclick="clearAll()">ล้าง</button>
         </div>
       </div>
-    </div>
 
-    <!-- Phase 2 -->
-    <div class="panel p2" id="panel2">
-      <div class="panel-header">
-        <span class="pipeline-badge">Phase 2</span>
-        <span class="panel-title">Graph + Vector Hybrid</span>
-        <span class="timing-tag" id="timing2">—</span>
+      <!-- Contraindication filter -->
+      <div class="contraind-row">
+        <label>ข้อห้ามใช้ของผู้ใช้:</label>
+        <span class="chip" onclick="toggleChip(this,'pregnancy')">🤰 ตั้งครรภ์</span>
+        <span class="chip" onclick="toggleChip(this,'kidney disease')">🫘 โรคไต</span>
+        <span class="chip" onclick="toggleChip(this,'liver disease')">🫁 โรคตับ</span>
+        <span class="chip" onclick="toggleChip(this,'alcohol')">🍺 ดื่มแอลกอฮอล์</span>
+        <span class="chip" onclick="toggleChip(this,'cephalosporin allergy')">⚠️ แพ้เซฟาโลสปอริน</span>
       </div>
-      <div class="panel-body">
-        <div id="candidates2"></div>
-        <div class="answer-box">
-          <span class="answer-placeholder" id="answer2">คำตอบจะปรากฏที่นี่...</span>
+
+      <!-- Comparison panels -->
+      <div class="compare-grid">
+
+        <!-- Phase 1 -->
+        <div class="panel p1" id="panel1">
+          <div class="panel-header">
+            <span class="pipeline-badge">Phase 1</span>
+            <span class="panel-title">Vector Only</span>
+            <span class="timing-tag" id="timing1">—</span>
+          </div>
+          <div class="panel-body">
+            <div class="answer-box">
+              <span class="answer-placeholder" id="answer1">คำตอบจะปรากฏที่นี่...</span>
+            </div>
+            <div class="sources-label">Sources</div>
+            <div id="sources1"><span style="color:var(--muted);font-size:12px">—</span></div>
+            <div class="rating-row">
+              <span class="rating-label">คุณภาพคำตอบ:</span>
+              <button class="rating-btn" id="r1up" onclick="rate('phase1','up')">👍</button>
+              <button class="rating-btn" id="r1down" onclick="rate('phase1','down')">👎</button>
+            </div>
+          </div>
         </div>
-        <div class="sources-label">Sources</div>
-        <div id="sources2"><span style="color:var(--muted);font-size:12px">—</span></div>
-        <div class="rating-row">
-          <span class="rating-label">คุณภาพคำตอบ:</span>
-          <button class="rating-btn" id="r2up"   onclick="rate('phase2','up')">👍</button>
-          <button class="rating-btn" id="r2down" onclick="rate('phase2','down')">👎</button>
+
+        <!-- Phase 2 -->
+        <div class="panel p2" id="panel2">
+          <div class="panel-header">
+            <span class="pipeline-badge">Phase 2</span>
+            <span class="panel-title">Graph + Vector Hybrid</span>
+            <span class="timing-tag" id="timing2">—</span>
+          </div>
+          <div class="panel-body">
+            <div id="candidates2"></div>
+            <div class="answer-box">
+              <span class="answer-placeholder" id="answer2">คำตอบจะปรากฏที่นี่...</span>
+            </div>
+            <div class="sources-label">Sources</div>
+            <div id="sources2"><span style="color:var(--muted);font-size:12px">—</span></div>
+            <div class="rating-row">
+              <span class="rating-label">คุณภาพคำตอบ:</span>
+              <button class="rating-btn" id="r2up" onclick="rate('phase2','up')">👍</button>
+              <button class="rating-btn" id="r2down" onclick="rate('phase2','down')">👎</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- CHAT MODE -->
+    <div id="chatMode" style="display:none;">
+      <div class="chat-container">
+        <div class="chat-history" id="chatHistory">
+          <div class="chat-msg chat-bot">สวัสดีครับ ผมคือผู้ช่วยเภสัชกร AI 💊\nบอกอาการหรือโรคของคุณมาได้เลยครับ (เช่น
+            "ผมปวดหัว" หรือ "มีไข้สูง")</div>
+        </div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" placeholder="พิมพ์ข้อความที่นี่... (กด Enter เพื่อส่ง)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+          <button id="chatSendBtn" onclick="sendChat()">ส่ง</button>
         </div>
       </div>
     </div>
 
-  </div>
+  </main>
 
-  </div>
+  <script>
+    const API = "";
+    let currentQuery = "";
+    let currentResult = null;
+    let ratings = {};
+    let history = JSON.parse(localStorage.getItem("evalHistory") || "[]");
+    let activeChips = new Set();
+    let chatSessionId = null;
 
-  <!-- CHAT MODE -->
-  <div id="chatMode" style="display:none;">
-    <div class="chat-container">
-      <div class="chat-history" id="chatHistory">
-        <div class="chat-msg chat-bot">สวัสดีครับ ผมคือผู้ช่วยเภสัชกร AI 💊\nบอกอาการหรือโรคของคุณมาได้เลยครับ (เช่น "ผมปวดหัว" หรือ "มีไข้สูง")</div>
-      </div>
-      <div class="chat-input-area">
-        <textarea id="chatInput" placeholder="พิมพ์ข้อความที่นี่... (กด Enter เพื่อส่ง)" 
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
-        <button id="chatSendBtn" onclick="sendChat()">ส่ง</button>
-      </div>
-    </div>
-  </div>
+    // ---------- Startup ----------
 
-</main>
+    async function checkHealth() {
+      try {
+        const r = await fetch(`${API}/health`);
+        const d = await r.json();
+        const badge = document.getElementById("statusBadge");
+        badge.textContent = `${d.vector_store.points} vectors | ${d.graph_store.nodes} graph nodes`;
+        badge.style.color = "var(--green)";
+      } catch {
+        document.getElementById("statusBadge").textContent = "API offline";
+        document.getElementById("statusBadge").style.color = "var(--red)";
+      }
+    }
 
-<script>
-const API = "http://localhost:8000";
-let currentQuery  = "";
-let currentResult = null;
-let ratings       = {};
-let history       = JSON.parse(localStorage.getItem("evalHistory") || "[]");
-let activeChips   = new Set();
-let chatSessionId = null;
+    // ---------- Chip filter ----------
 
-// ---------- Startup ----------
+    function toggleChip(el, value) {
+      if (activeChips.has(value)) { activeChips.delete(value); el.classList.remove("active"); }
+      else { activeChips.add(value); el.classList.add("active"); }
+    }
 
-async function checkHealth() {
-  try {
-    const r = await fetch(`${API}/health`);
-    const d = await r.json();
-    const badge = document.getElementById("statusBadge");
-    badge.textContent = `${d.vector_store.points} vectors | ${d.graph_store.nodes} graph nodes`;
-    badge.style.color = "var(--green)";
-  } catch {
-    document.getElementById("statusBadge").textContent = "API offline";
-    document.getElementById("statusBadge").style.color = "var(--red)";
-  }
-}
+    // ---------- Query ----------
 
-// ---------- Chip filter ----------
+    function setLoading(on) {
+      const btn = document.getElementById("sendBtn");
+      btn.disabled = on;
+      btn.innerHTML = on ? '<span class="spinner"></span>กำลังประมวล...' : 'ส่ง';
+      ["answer1", "answer2"].forEach(id => {
+        if (on) document.getElementById(id).textContent = "กำลังประมวลผล...";
+      });
+      if (on) {
+        ["sources1", "sources2"].forEach(id => document.getElementById(id).innerHTML = "");
+        document.getElementById("candidates2").innerHTML = "";
+        ["timing1", "timing2"].forEach(id => document.getElementById(id).textContent = "...");
+      }
+    }
 
-function toggleChip(el, value) {
-  if (activeChips.has(value)) { activeChips.delete(value); el.classList.remove("active"); }
-  else                        { activeChips.add(value);    el.classList.add("active"); }
-}
+    async function sendQuery() {
+      const q = document.getElementById("queryInput").value.trim();
+      if (!q) return;
 
-// ---------- Query ----------
+      currentQuery = q;
+      currentResult = null;
+      ratings = {};
+      resetRatingButtons();
+      setLoading(true);
 
-function setLoading(on) {
-  const btn = document.getElementById("sendBtn");
-  btn.disabled = on;
-  btn.innerHTML = on ? '<span class="spinner"></span>กำลังประมวล...' : 'ส่ง';
-  ["answer1","answer2"].forEach(id => {
-    if (on) document.getElementById(id).textContent = "กำลังประมวลผล...";
-  });
-  if (on) {
-    ["sources1","sources2"].forEach(id => document.getElementById(id).innerHTML = "");
-    document.getElementById("candidates2").innerHTML = "";
-    ["timing1","timing2"].forEach(id => document.getElementById(id).textContent = "...");
-  }
-}
+      try {
+        const body = {
+          query: q,
+          model: document.getElementById("modelSelect").value,
+          user_contraindications: [...activeChips],
+        };
+        const res = await fetch(`${API}/eval`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
 
-async function sendQuery() {
-  const q = document.getElementById("queryInput").value.trim();
-  if (!q) return;
+        if (!res.ok) throw new Error(await res.text());
+        currentResult = await res.json();
+        renderResult(currentResult);
 
-  currentQuery = q;
-  currentResult = null;
-  ratings = {};
-  resetRatingButtons();
-  setLoading(true);
+      } catch (err) {
+        ["answer1", "answer2"].forEach(id => {
+          document.getElementById(id).textContent = "เกิดข้อผิดพลาด: " + err.message;
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  try {
-    const body = {
-      query: q,
-      model: document.getElementById("modelSelect").value,
-      user_contraindications: [...activeChips],
-    };
-    const res  = await fetch(`${API}/eval`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    // ---------- Render ----------
 
-    if (!res.ok) throw new Error(await res.text());
-    currentResult = await res.json();
-    renderResult(currentResult);
+    function renderResult(data) {
+      // Phase 1
+      document.getElementById("answer1").textContent = data.phase1.answer;
+      document.getElementById("timing1").textContent = `${data.phase1.retrieval_ms}ms`;
+      document.getElementById("sources1").innerHTML = renderSources(data.phase1.sources, "p1-color");
 
-  } catch (err) {
-    ["answer1","answer2"].forEach(id => {
-      document.getElementById(id).textContent = "เกิดข้อผิดพลาด: " + err.message;
-    });
-  } finally {
-    setLoading(false);
-  }
-}
+      // Phase 2 candidates
+      document.getElementById("candidates2").innerHTML = renderCandidates(data.phase2);
 
-// ---------- Render ----------
+      // Phase 2
+      document.getElementById("answer2").textContent = data.phase2.answer;
+      document.getElementById("timing2").textContent = `${data.phase2.retrieval_ms}ms`;
+      document.getElementById("sources2").innerHTML = renderSources(data.phase2.sources, "p2-color");
+    }
 
-function renderResult(data) {
-  // Phase 1
-  document.getElementById("answer1").textContent  = data.phase1.answer;
-  document.getElementById("timing1").textContent  = `${data.phase1.retrieval_ms}ms`;
-  document.getElementById("sources1").innerHTML   = renderSources(data.phase1.sources, "p1-color");
-
-  // Phase 2 candidates
-  document.getElementById("candidates2").innerHTML = renderCandidates(data.phase2);
-
-  // Phase 2
-  document.getElementById("answer2").textContent  = data.phase2.answer;
-  document.getElementById("timing2").textContent  = `${data.phase2.retrieval_ms}ms`;
-  document.getElementById("sources2").innerHTML   = renderSources(data.phase2.sources, "p2-color");
-}
-
-function renderSources(sources, colorVar) {
-  if (!sources || !sources.length) return '<span style="color:var(--muted);font-size:12px">ไม่พบแหล่งข้อมูล</span>';
-  return sources.slice(0, 5).map(s => `
+    function renderSources(sources, colorVar) {
+      if (!sources || !sources.length) return '<span style="color:var(--muted);font-size:12px">ไม่พบแหล่งข้อมูล</span>';
+      return sources.slice(0, 5).map(s => `
     <div class="source-item">
       <div class="source-header">
         <span class="source-pill" style="color:var(--${colorVar})">${s.pill_name}</span>
@@ -523,53 +810,53 @@ function renderSources(sources, colorVar) {
         ${s.detail.slice(0, 3).map(d => `<li>${d}</li>`).join('')}
       </ul>
     </div>`).join('');
-}
+    }
 
-function renderCandidates(phase2Data) {
-  // We don't have candidate_drugs in the response model yet — will be added later
-  return '';
-}
+    function renderCandidates(phase2Data) {
+      // We don't have candidate_drugs in the response model yet — will be added later
+      return '';
+    }
 
-// ---------- Rating ----------
+    // ---------- Rating ----------
 
-function rate(pipeline, vote) {
-  ratings[pipeline] = vote;
+    function rate(pipeline, vote) {
+      ratings[pipeline] = vote;
 
-  const prefix = pipeline === 'phase1' ? 'r1' : 'r2';
-  document.getElementById(prefix + 'up').classList.toggle('selected',   vote === 'up');
-  document.getElementById(prefix + 'down').classList.toggle('selected', vote === 'down');
+      const prefix = pipeline === 'phase1' ? 'r1' : 'r2';
+      document.getElementById(prefix + 'up').classList.toggle('selected', vote === 'up');
+      document.getElementById(prefix + 'down').classList.toggle('selected', vote === 'down');
 
-  // Save to history when both rated
-  if (ratings.phase1 && ratings.phase2) {
-    saveHistory();
-  }
-}
+      // Save to history when both rated
+      if (ratings.phase1 && ratings.phase2) {
+        saveHistory();
+      }
+    }
 
-function resetRatingButtons() {
-  ["r1up","r1down","r2up","r2down"].forEach(id => {
-    document.getElementById(id).classList.remove("selected");
-  });
-}
+    function resetRatingButtons() {
+      ["r1up", "r1down", "r2up", "r2down"].forEach(id => {
+        document.getElementById(id).classList.remove("selected");
+      });
+    }
 
-function saveHistory() {
-  const entry = {
-    ts:    new Date().toLocaleString("th-TH"),
-    query: currentQuery,
-    r1:    ratings.phase1,
-    r2:    ratings.phase2,
-  };
-  history.unshift(entry);
-  localStorage.setItem("evalHistory", JSON.stringify(history.slice(0, 50)));
-  renderHistory();
-}
+    function saveHistory() {
+      const entry = {
+        ts: new Date().toLocaleString("th-TH"),
+        query: currentQuery,
+        r1: ratings.phase1,
+        r2: ratings.phase2,
+      };
+      history.unshift(entry);
+      localStorage.setItem("evalHistory", JSON.stringify(history.slice(0, 50)));
+      renderHistory();
+    }
 
-function renderHistory() {
-  const el = document.getElementById("historyList");
-  if (!history.length) {
-    el.innerHTML = '<div class="empty"><div class="icon">📋</div>ยังไม่มีประวัติ</div>';
-    return;
-  }
-  el.innerHTML = history.map(e => `
+    function renderHistory() {
+      const el = document.getElementById("historyList");
+      if (!history.length) {
+        el.innerHTML = '<div class="empty"><div class="icon">📋</div>ยังไม่มีประวัติ</div>';
+        return;
+      }
+      el.innerHTML = history.map(e => `
     <div class="history-row" onclick="document.getElementById('queryInput').value='${e.query.replace(/'/g, "\\'")}'">
       <span style="color:var(--muted);font-size:11px">${e.ts}</span>
       <span class="history-q">${e.query}</span>
@@ -577,102 +864,103 @@ function renderHistory() {
       <span style="color:var(--muted);font-size:11px">vs</span>
       <span class="history-rating" title="Phase 2">${e.r2 === 'up' ? '👍' : '👎'}</span>
     </div>`).join('');
-}
-
-function clearAll() {
-  document.getElementById("queryInput").value = "";
-  ["answer1","answer2"].forEach(id => {
-    document.getElementById(id).textContent = "คำตอบจะปรากฏที่นี่...";
-  });
-  ["sources1","sources2"].forEach(id => {
-    document.getElementById(id).innerHTML = '<span style="color:var(--muted);font-size:12px">—</span>';
-  });
-  ["timing1","timing2"].forEach(id => document.getElementById(id).textContent = "—");
-  document.getElementById("candidates2").innerHTML = "";
-  resetRatingButtons();
-}
-
-// ---------- Init ----------
-checkHealth();
-renderHistory();
-
-// ---------- Tab Switching ----------
-function switchTab(mode) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  
-  if (mode === 'eval') {
-    document.getElementById('evalMode').style.display = 'block';
-    document.getElementById('chatMode').style.display = 'none';
-  } else {
-    document.getElementById('evalMode').style.display = 'none';
-    document.getElementById('chatMode').style.display = 'block';
-  }
-}
-
-// ---------- Conversational Chat ----------
-function appendMessage(role, text, extraHtml = "") {
-  const container = document.getElementById('chatHistory');
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `chat-msg chat-${role}`;
-  msgDiv.innerHTML = text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + extraHtml;
-  container.appendChild(msgDiv);
-  container.scrollTop = container.scrollHeight;
-}
-
-async function sendChat() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-  
-  const btn = document.getElementById('chatSendBtn');
-  input.value = "";
-  btn.disabled = true;
-  btn.innerHTML = "...";
-  
-  appendMessage('user', text);
-  
-  try {
-    const body = {
-      query: text,
-      session_id: chatSessionId,
-      model: document.getElementById("modelSelect").value,
-      user_contraindications: [...activeChips],
-    };
-    
-    console.log("[Chat Request] session_id:", chatSessionId, "query:", text);
-    const res = await fetch(`${API}/chat/converse`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    console.log("[Chat Response]", data);
-    
-    chatSessionId = data.session_id; // save session ID for next turn
-    
-    let extraHtml = "";
-    if (data.candidates && data.candidates.length > 0 && !data.is_final) {
-      extraHtml = `<div class="chat-candidates">ยาที่อาจเหมาะสม (${data.candidates.length}): ${data.candidates.join(", ")}</div>`;
     }
-    
-    if (data.is_final) {
-      chatSessionId = null; // reset session when conversation completes
-      extraHtml += `<div class="chat-candidates" style="color:var(--green)">✓ จบการวิเคราะห์ (วินิจฉัยเรียบร้อย)</div>`;
+
+    function clearAll() {
+      document.getElementById("queryInput").value = "";
+      ["answer1", "answer2"].forEach(id => {
+        document.getElementById(id).textContent = "คำตอบจะปรากฏที่นี่...";
+      });
+      ["sources1", "sources2"].forEach(id => {
+        document.getElementById(id).innerHTML = '<span style="color:var(--muted);font-size:12px">—</span>';
+      });
+      ["timing1", "timing2"].forEach(id => document.getElementById(id).textContent = "—");
+      document.getElementById("candidates2").innerHTML = "";
+      resetRatingButtons();
     }
-    
-    appendMessage('bot', data.answer, extraHtml);
-    
-  } catch (err) {
-    appendMessage('bot', "❌ เกิดข้อผิดพลาด: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "ส่ง";
-    input.focus();
-  }
-}
-</script>
+
+    // ---------- Init ----------
+    checkHealth();
+    renderHistory();
+
+    // ---------- Tab Switching ----------
+    function switchTab(mode) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (mode === 'eval') {
+        document.getElementById('evalMode').style.display = 'block';
+        document.getElementById('chatMode').style.display = 'none';
+      } else {
+        document.getElementById('evalMode').style.display = 'none';
+        document.getElementById('chatMode').style.display = 'block';
+      }
+    }
+
+    // ---------- Conversational Chat ----------
+    function appendMessage(role, text, extraHtml = "") {
+      const container = document.getElementById('chatHistory');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-msg chat-${role}`;
+      msgDiv.innerHTML = text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + extraHtml;
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('chatSendBtn');
+      input.value = "";
+      btn.disabled = true;
+      btn.innerHTML = "...";
+
+      appendMessage('user', text);
+
+      try {
+        const body = {
+          query: text,
+          session_id: chatSessionId,
+          model: document.getElementById("modelSelect").value,
+          user_contraindications: [...activeChips],
+        };
+
+        console.log("[Chat Request] session_id:", chatSessionId, "query:", text);
+        const res = await fetch(`${API}/chat/converse`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        console.log("[Chat Response]", data);
+
+        chatSessionId = data.session_id; // save session ID for next turn
+
+        let extraHtml = "";
+        if (data.candidates && data.candidates.length > 0 && !data.is_final) {
+          extraHtml = `<div class="chat-candidates">ยาที่อาจเหมาะสม (${data.candidates.length}): ${data.candidates.join(", ")}</div>`;
+        }
+
+        if (data.is_final) {
+          chatSessionId = null; // reset session when conversation completes
+          extraHtml += `<div class="chat-candidates" style="color:var(--green)">✓ จบการวิเคราะห์ (วินิจฉัยเรียบร้อย)</div>`;
+        }
+
+        appendMessage('bot', data.answer, extraHtml);
+
+      } catch (err) {
+        appendMessage('bot', "❌ เกิดข้อผิดพลาด: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "ส่ง";
+        input.focus();
+      }
+    }
+  </script>
 </body>
+
 </html>
