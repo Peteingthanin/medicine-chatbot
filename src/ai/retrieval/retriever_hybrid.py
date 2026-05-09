@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from neo4j import GraphDatabase
+from neo4j.exceptions import ServiceUnavailable
 from llama_cpp import Llama
 from qdrant_client import QdrantClient
 
@@ -94,18 +95,30 @@ class HybridRetriever:
         self._connect_neo4j()
 
     def _connect_neo4j(self):
-        try:
-            self.neo4j_driver = GraphDatabase.driver(
-                NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD)
-            )
-            self.neo4j_driver.verify_connectivity()
-            with self.neo4j_driver.session() as session:
-                nodes = session.run("MATCH (n) RETURN count(n) as nodes").single()["nodes"]
-                rels  = session.run("MATCH ()-[r]->() RETURN count(r) as rels").single()["rels"]
-            print(f"Neo4j connected: {nodes} nodes, {rels} relationships")
-        except Exception as e:
-            print(f"Warning: Neo4j connection failed ({e}). Phase 2 graph queries will fall back to vector-only.")
-            self.neo4j_driver = None
+        max_retries = 6
+        for attempt in range(1, max_retries + 1):
+            try:
+                self.neo4j_driver = GraphDatabase.driver(
+                    NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD)
+                )
+                self.neo4j_driver.verify_connectivity()
+                with self.neo4j_driver.session() as session:
+                    nodes = session.run("MATCH (n) RETURN count(n) as nodes").single()["nodes"]
+                    rels  = session.run("MATCH ()-[r]->() RETURN count(r) as rels").single()["rels"]
+                print(f"Neo4j connected: {nodes} nodes, {rels} relationships")
+                return
+            except (ServiceUnavailable, OSError) as e:
+                if attempt < max_retries:
+                    wait = attempt * 5
+                    print(f"Neo4j not ready (attempt {attempt}/{max_retries}), retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    print(f"Warning: Neo4j connection failed after {max_retries} attempts ({e}). Phase 2 graph queries will fall back to vector-only.")
+                    self.neo4j_driver = None
+            except Exception as e:
+                print(f"Warning: Neo4j connection failed ({e}). Phase 2 graph queries will fall back to vector-only.")
+                self.neo4j_driver = None
+                return
 
     async def _extract_intent_and_entities(self, query: str, model_choice: str) -> dict:
         """Use LLM to extract intent, symptoms, and drug keywords from the user query."""

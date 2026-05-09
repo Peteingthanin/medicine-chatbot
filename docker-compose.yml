@@ -17,14 +17,23 @@ services:
       - ./vector_db:/qdrant/storage
       - ./llm:/app/llm:ro
     depends_on:
-      - neo4j
-      - qdrant
+      neo4j:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: unless-stopped
 
   neo4j:
     image: neo4j:2026.04.0
     ports:
       - "7474:7474"
       - "7687:7687"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     environment:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_PLUGINS=["apoc"]

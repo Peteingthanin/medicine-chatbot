@@ -10,6 +10,7 @@
 fda_pdfs/
 graphify-out/
 pipeline/
+llm/
 
 # Files
 AGENTS.MD
