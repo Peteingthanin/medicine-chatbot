@@ -120,11 +120,22 @@ app.add_middleware(
 app.include_router(router)
 
 # Serve frontend at root
-_FRONTEND = Path(__file__).parent.parent / "frontend" / "index.html"
+_FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
+_VUE_DIST = _FRONTEND_DIR / "dist"
+_FRONTEND_HTML = _FRONTEND_DIR / "index.html"
+
+if _VUE_DIST.exists() and (_VUE_DIST / "index.html").exists():
+    _SERVE_DIR = _VUE_DIST
+    _SERVE_HTML = _VUE_DIST / "index.html"
+else:
+    _SERVE_DIR = _FRONTEND_DIR
+    _SERVE_HTML = _FRONTEND_HTML
 
 @app.get("/")
 async def serve_frontend():
     """Serve the frontend index.html at root URL."""
-    return FileResponse(_FRONTEND)
+    return FileResponse(_SERVE_HTML)
 
-app.mount("/static", StaticFiles(directory=_FRONTEND.parent), name="static")
+if _SERVE_DIR == _VUE_DIST:
+    app.mount("/assets", StaticFiles(directory=_SERVE_DIR / "assets"), name="assets")
+

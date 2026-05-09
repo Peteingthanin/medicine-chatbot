@@ -13,7 +13,6 @@ services:
       - QDRANT_PATH=/qdrant/storage
       - USE_LOCAL_CHAT_MODEL=${USE_LOCAL_CHAT_MODEL:-true}
     volumes:
-      - ./src/frontend:/app/src/ai/frontend:ro
       - ./vector_db:/qdrant/storage
       - ./llm:/app/llm:ro
     depends_on:
@@ -29,9 +28,9 @@ services:
       - "7474:7474"
       - "7687:7687"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | cypher-shell -u neo4j -p password || exit 1"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 10
       start_period: 30s
     environment:

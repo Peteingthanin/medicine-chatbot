@@ -25,6 +25,10 @@ graphify-out/
 *.txt
 !requirements.txt
 
+# ----- Frontend build artefacts (copied in multi-stage build) -----
+src/frontend/node_modules/
+src/frontend/dist/
+
 # ----- Python artefacts -----
 **/__pycache__/
 **/*.pyc

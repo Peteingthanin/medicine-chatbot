@@ -1,3 +1,12 @@
+# Stage 1: Build Vue frontend
+FROM node:22-alpine AS frontend-builder
+WORKDIR /frontend
+COPY src/frontend/package.json src/frontend/package-lock.json ./
+RUN npm ci --production=false
+COPY src/frontend/ ./
+RUN npm run build
+
+# Stage 2: Python app
 FROM python:3.10-slim
 
 WORKDIR /app
@@ -18,8 +27,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy AI code (src/ai/)
 COPY src/ai/ ./src/ai/
 
-# Copy frontend static files
-COPY src/frontend/ ./src/frontend/
+# Copy Vue frontend build output
+COPY --from=frontend-builder /frontend/dist ./src/frontend/dist
 
 # Set Python path so imports from 'ai' package work correctly
 ENV PYTHONPATH=/app/src

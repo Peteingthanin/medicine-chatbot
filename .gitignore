@@ -18,3 +18,6 @@ CLAUDE.MD
 cloud_output.txt
 scratch_test_cloud.py
 .env
+PLAN_UI_UPGRADE.md
+src/frontend/node_modules/
+src/frontend/dist/
