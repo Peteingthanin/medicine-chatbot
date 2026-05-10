@@ -5,7 +5,7 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Request
 
 from ai.config.db  import QDRANT_COLLECTION
-from ai.config.llm import EMBED_MODEL_PATH, CHAT_MODEL_PATH
+from ai.config.llm import EMBED_MODEL_PATH
 from ai.config.app import (
     CONVERSE_MAX_CANDIDATES, CONVERSE_TOP_K_PER_DRUG,
     CONVERSE_STOP_THRESHOLD, CONVERSE_MAX_TURNS, CONVERSE_SCORE_GAP,
@@ -311,7 +311,7 @@ async def health(request: Request):
     return {
         "status":       "ok",
         "embed_model":  EMBED_MODEL_PATH,
-        "chat_model":   CHAT_MODEL_PATH,
+        "chat_model":   "cloud-only (DeepSeek / OpenRouter)",
         "vector_store": {"collection": QDRANT_COLLECTION, "points": vector_count},
         "graph_store":  {"backend": "neo4j", "nodes": neo4j_nodes, "edges": neo4j_rels},
     }

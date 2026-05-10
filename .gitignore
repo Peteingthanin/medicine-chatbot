@@ -8,7 +8,9 @@
 .opencode/
 .extracted_data/
 fda_pdfs/
+# Graphify (knowledge graph)
 graphify-out/
+.graphify_*
 pipeline/
 llm/
 

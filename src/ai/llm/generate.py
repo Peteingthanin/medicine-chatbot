@@ -9,11 +9,12 @@ Provides:
 import re
 from typing import Optional
 
-from ai.config.llm import (
-    CHAT_MAX_TOKENS, CHAT_TEMPERATURE,
-    DEEPSEEK_MODEL_ID, OPENROUTER_MODEL_ID,
-)
+from ai.config.llm import DEEPSEEK_MODEL_ID, OPENROUTER_MODEL_ID
 from ai.config.app import STRIP_THINKING
+
+# Generation defaults (previously in config/llm.py as CHAT_* constants)
+_MAX_TOKENS  = 8192
+_TEMPERATURE = 0.5
 
 # ---------------------------------------------------------------------------
 # System prompt (Thai medication assistant)
@@ -92,8 +93,8 @@ async def call_model(
         resp = await deepseek_client.chat.completions.create(
             model=DEEPSEEK_MODEL_ID,
             messages=messages,
-            max_tokens=CHAT_MAX_TOKENS,
-            temperature=CHAT_TEMPERATURE,
+            max_tokens=_MAX_TOKENS,
+            temperature=_TEMPERATURE,
         )
         answer = resp.choices[0].message.content
 
@@ -101,8 +102,8 @@ async def call_model(
         resp = await openai_client.chat.completions.create(
             model=OPENROUTER_MODEL_ID,
             messages=messages,
-            max_tokens=CHAT_MAX_TOKENS,
-            temperature=CHAT_TEMPERATURE,
+            max_tokens=_MAX_TOKENS,
+            temperature=_TEMPERATURE,
         )
         answer = resp.choices[0].message.content
 
@@ -110,8 +111,8 @@ async def call_model(
     elif chat_model is not None:
         resp = chat_model.create_chat_completion(
             messages=messages,
-            max_tokens=CHAT_MAX_TOKENS,
-            temperature=CHAT_TEMPERATURE,
+            max_tokens=_MAX_TOKENS,
+            temperature=_TEMPERATURE,
         )
         answer = resp["choices"][0]["message"]["content"]
 

@@ -15,8 +15,6 @@ from openai import AsyncOpenAI
 
 from ai.config.llm import (
     EMBED_MODEL_PATH, EMBED_N_CTX, EMBED_N_GPU_LAYERS,
-    CHAT_MODEL_PATH,  CHAT_N_CTX,  CHAT_N_GPU_LAYERS,
-    USE_LOCAL_CHAT_MODEL,
     DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL,
     OPENROUTER_API_KEY, OPENROUTER_BASE_URL,
 )
@@ -40,16 +38,6 @@ def load_embed_model() -> Llama:
     )
 
 
-def load_chat_model() -> Llama:
-    print("[startup] Loading chat model...")
-    return Llama(
-        model_path=CHAT_MODEL_PATH,
-        n_ctx=CHAT_N_CTX,
-        n_gpu_layers=CHAT_N_GPU_LAYERS,
-        chat_format="chatml",
-        verbose=False,
-    )
-
 
 # ---------------------------------------------------------------------------
 # App lifespan — load all models and clients once at startup
@@ -58,12 +46,7 @@ def load_chat_model() -> Llama:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.embed_model = load_embed_model()
-
-    if USE_LOCAL_CHAT_MODEL:
-        app.state.chat_model = load_chat_model()
-    else:
-        app.state.chat_model = None
-        print("[startup] Skipping local chat model (USE_LOCAL_CHAT_MODEL=False)")
+    app.state.chat_model = None  # local chat model removed — cloud-only
 
     # DeepSeek client (primary cloud model)
     if DEEPSEEK_API_KEY:

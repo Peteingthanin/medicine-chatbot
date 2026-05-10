@@ -10,7 +10,6 @@ load_dotenv()
 # Local model paths (relative to project root, mounted into Docker at /app)
 # ---------------------------------------------------------------------------
 EMBED_MODEL_PATH = "llm/Qwen3-Embedding-4B-Q6_K.gguf"
-CHAT_MODEL_PATH  = "llm/Qwen3.5-4B-Q6_K.gguf"
 # Larger 9B model — used only by offline pipeline scripts (03_extract_graph.py)
 GRAPH_MODEL_PATH = "llm/Qwen3.5-9B-UD-Q6_K_XL.gguf"
 
@@ -28,18 +27,7 @@ EMBED_QUERY_PREFIX = (
 )
 
 # ---------------------------------------------------------------------------
-# Local chat model settings
-# ---------------------------------------------------------------------------
-# Set False to skip loading the local model into RAM (saves ~8 GB)
-USE_LOCAL_CHAT_MODEL = os.getenv("USE_LOCAL_CHAT_MODEL", "false").lower() == "true"
-
-CHAT_N_CTX        = 32768
-CHAT_N_GPU_LAYERS = -1
-CHAT_MAX_TOKENS   = 8192
-CHAT_TEMPERATURE  = 0.5
-
-# ---------------------------------------------------------------------------
-# DeepSeek (primary cloud model)
+# Cloud LLM settings
 # ---------------------------------------------------------------------------
 DEEPSEEK_API_KEY  = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
