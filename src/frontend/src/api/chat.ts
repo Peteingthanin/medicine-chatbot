@@ -1,6 +1,6 @@
 import type { ChatRequest, ChatResponse, HealthResponse } from '../types/chat'
 
-const API_BASE = ''
+const API_BASE = import.meta.env.PROD ? '/medicine' : ''
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
