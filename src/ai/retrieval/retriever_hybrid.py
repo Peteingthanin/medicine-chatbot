@@ -130,29 +130,32 @@ class HybridRetriever:
                 {"role": "user",   "content": query},
             ]
 
+            from ai.llm.generate import strip_thinking
+            
             if model_choice in ("deepseek", "cloud") and self.deepseek_client is not None:
                 response = await self.deepseek_client.chat.completions.create(
                     model=DEEPSEEK_MODEL_ID, messages=messages,
-                    max_tokens=256, temperature=0.0,
+                    max_tokens=4096, temperature=0.1,
+                    response_format={"type": "json_object"},
                 )
                 raw = response.choices[0].message.content
             elif model_choice == "minimax" and self.openai_client is not None:
                 response = await self.openai_client.chat.completions.create(
                     model=OPENROUTER_MODEL_ID, messages=messages,
-                    max_tokens=256, temperature=0.0,
+                    max_tokens=4096, temperature=0.1,
                 )
                 raw = response.choices[0].message.content
             elif self.chat_model is not None:
                 response = self.chat_model.create_chat_completion(
-                    messages=messages, max_tokens=256, temperature=0.0,
+                    messages=messages, max_tokens=4096, temperature=0.1,
                     response_format={"type": "json_object"},
                 )
                 raw = response["choices"][0]["message"]["content"]
-                if STRIP_THINKING:
-                    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL)
-                    raw = re.sub(r"<think>.*$",         "", raw, flags=re.DOTALL)
             else:
                 return default_res
+
+            if STRIP_THINKING:
+                raw = strip_thinking(raw)
 
             if not raw:
                 return default_res
