@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from llama_cpp import Llama
 from qdrant_client import QdrantClient
@@ -100,7 +100,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(router, prefix="/medicine")
 
 # Serve frontend at root
 _FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
@@ -115,10 +115,16 @@ else:
     _SERVE_HTML = _FRONTEND_HTML
 
 @app.get("/")
+async def redirect_root():
+    """Redirect root to /medicine/"""
+    return RedirectResponse(url="/medicine/")
+
+@app.get("/medicine")
+@app.get("/medicine/")
 async def serve_frontend():
-    """Serve the frontend index.html at root URL."""
+    """Serve the frontend index.html at /medicine/ URL."""
     return FileResponse(_SERVE_HTML)
 
 if _SERVE_DIR == _VUE_DIST:
-    app.mount("/assets", StaticFiles(directory=_SERVE_DIR / "assets"), name="assets")
+    app.mount("/medicine/assets", StaticFiles(directory=_SERVE_DIR / "assets"), name="assets")
 
