@@ -11,8 +11,10 @@ fda_pdfs/
 # Graphify (knowledge graph)
 graphify-out/
 .graphify_*
-pipeline/
 llm/
+fda_pdfs/
+extracted_data/
+
 
 # Files
 AGENTS.MD
